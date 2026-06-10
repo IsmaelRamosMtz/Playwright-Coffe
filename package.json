@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "mailslurp-client": "^17.2.0",
+    "playwright": "^1.60.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "@types/node": "^25.7.0"
+  },
+  "scripts": {
+    "test": "playwright test"
+  }
+}

@@ -1,17 +1,17 @@
-# Playwright Coffee Shop
+# Playwright Coffee Shop ☕
 
 Este proyecto es una introducción práctica a Playwright con ejemplos reales de pruebas end-to-end en una tienda de café.
 
 Incluye:
-- pruebas de un flujo de compra completo.
-- uso de Page Objects para separar la lógica de UI.
-- interceptación y mock de peticiones HTTP.
-- manejo de correos temporales con MailSlurp.
-- persistencia de sesión mediante `storageState`.
+- ✅ pruebas de un flujo de compra completo.
+- 📁 uso de Page Objects para separar la lógica de UI.
+- 🌐 interceptación y mock de peticiones HTTP.
+- ✉️ manejo de correos temporales con MailSlurp.
+- 🔒 persistencia de sesión mediante `storageState`.
 
 ---
 
-## 1. Estructura del proyecto
+## 1. Estructura del proyecto 🧱
 
 ### Carpetas principales
 
@@ -30,7 +30,7 @@ Incluye:
 
 ---
 
-## 2. Instalación
+## 2. Instalación 🚀
 
 Instala dependencias con:
 
@@ -53,7 +53,7 @@ rm -rf node_modules && npm install
 
 ---
 
-## 3. Configuración de entorno
+## 3. Configuración de entorno 🔧
 
 Crea un archivo `.env` en la raíz del proyecto con la clave de MailSlurp:
 
@@ -65,7 +65,7 @@ Asegúrate de no subir `.env` al repositorio.
 
 ---
 
-## 4. Configuración de Playwright
+## 4. Configuración de Playwright 🧩
 
 El archivo `playwright.config.ts` contiene la configuración más importante:
 
@@ -94,7 +94,7 @@ Esto permite mantener una sesión autenticada entre tests sin repetir el paso de
 
 ---
 
-## 5. Cómo ejecutar los tests
+## 5. Cómo ejecutar los tests ▶️
 
 ### Ejecutar todos los tests
 
@@ -122,7 +122,7 @@ SIGN_UP_FLOW=true npx playwright test tests/basic/auth.spec.ts
 
 ---
 
-## 6. Qué hace cada test
+## 6. Qué hace cada test 🧪
 
 ### `tests/basic/1ApiIntercept.spec.ts`
 
@@ -177,7 +177,7 @@ SIGN_UP_FLOW=true npx playwright test tests/basic/auth.spec.ts
 
 ---
 
-## 7. Page Objects
+## 7. Page Objects 📄
 
 Los Page Objects ayudan a tener tests más limpios y reutilizables.
 
@@ -224,7 +224,7 @@ Acciones:
 
 ---
 
-## 8. Utilidades
+## 8. Utilidades 🛠️
 
 ### `utils/EmailUtil.ts`
 
@@ -235,7 +235,7 @@ Esto permite automatizar pruebas de email sin usar una cuenta de correo real.
 
 ---
 
-## 9. Conceptos avanzados usados
+## 9. Conceptos avanzados usados ✨
 
 ### `dotenv`
 
@@ -258,7 +258,7 @@ Se usa para estructurar los tests en pasos claros y legibles.
 
 ---
 
-## 10. Recomendaciones
+## 10. Recomendaciones ✅
 
 - Usa Page Objects siempre que añadas nuevos flujos.
 - Mantén las variables sensibles fuera del repositorio.
@@ -267,7 +267,7 @@ Se usa para estructurar los tests en pasos claros y legibles.
 
 ---
 
-## 11. ¿Para qué sirve este README?
+## 11. ¿Para qué sirve este README? 📘
 
 Esta guía es una referencia rápida para entender:
 - la estructura del proyecto
