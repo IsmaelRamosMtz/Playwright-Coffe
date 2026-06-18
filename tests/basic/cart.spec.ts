@@ -9,8 +9,23 @@ test('add to cart', async ({ page }) => {
 
     await page.locator('[data-test-id="header-cart-button"]').click();
 
-    const assertProductInCart = await Carts.assertProductInCart(page, addProductToCart.name);
+    await Carts.assertProductInCart(page, addProductToCart.name);
 
     const subTotal = await Carts.getSubTotal(page);
     expect(subTotal).toBe(addProductToCart.price);
-})
+});
+
+test('add multiple products to cart and verify subtotal', async ({ page }) => {
+    await page.goto('/products');
+
+    const firstProduct = await Products.addProductToCart(page, 0);
+    const secondProduct = await Products.addProductToCart(page, 1);
+
+    await page.locator('[data-test-id="header-cart-button"]').click();
+
+    await Carts.assertProductInCart(page, firstProduct.name);
+    await Carts.assertProductInCart(page, secondProduct.name);
+
+    const subTotal = await Carts.getSubTotal(page);
+    expect(subTotal).toBe(firstProduct.price + secondProduct.price);
+});
