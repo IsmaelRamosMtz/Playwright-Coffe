@@ -7,15 +7,11 @@ pipeline {
 
     stages {
         stage('build') {
-            agent {
-                docker {
-                    image 'node:22-alpine'
-                }
-            }
-            steps {
-                sh 'npm ci'
-                sh 'npm run build'
-            }
+             agent { docker { image 'node:22-alpine' } }
+  steps {
+    sh 'npm ci'
+    sh 'npx playwright install --with-deps'
+  }
         }
 
         stage('test') {
