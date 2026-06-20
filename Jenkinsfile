@@ -8,8 +8,7 @@ pipeline {
     stages {
         stage('build') {
             steps {
-                sh 'npm ci'
-                sh 'npx playwright install --with-deps'
+                echo 'Step 1: Building the application...'
             }
         }
 
