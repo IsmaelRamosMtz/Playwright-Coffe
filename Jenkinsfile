@@ -7,7 +7,9 @@ pipeline {
 
     stages {
         stage('build') {
-            agent {
+
+            echo 'Skipping build stage for demonstration purposes.'
+   /*          agent {
                 docker {
                     image 'node:22-alpine'
                     reuseNode true
@@ -16,7 +18,7 @@ pipeline {
             steps {
                 sh 'npm ci'
                 sh 'npm run build'
-            }
+            } */
         }
 
         stage('test') {
