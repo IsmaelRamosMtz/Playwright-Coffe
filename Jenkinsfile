@@ -20,19 +20,14 @@ pipeline {
         }
 
         stage('test') {
-            parallel {
-                stage('unit tests') {
-                    agent {
-                        docker {
-                            image 'node:22-alpine'
-                            reuseNode true
-                        }
-                    }
-                    steps {
-                        // Unit tests with Vitest
-                        sh 'npx vitest run --reporter=verbose'
-                    }
+            agent {
+                docker {
+                    image 'node:22-bullseye-slim'
+                    reuseNode true
                 }
+            }
+            steps {
+                sh 'npx playwright test'
             }
         }
 
@@ -43,7 +38,6 @@ pipeline {
                 }
             }
             steps {
-                // Mock deployment which does nothing
                 echo 'Mock deployment was successful!'
             }
         }
