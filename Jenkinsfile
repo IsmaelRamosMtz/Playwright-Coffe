@@ -8,25 +8,19 @@ pipeline {
     stages {
         stage('build') {
             steps {
-                echo 'Step 1: Building the application...'
+                sh 'npm ci'
+                sh 'npx playwright install --with-deps'
             }
         }
 
         stage('test') {
-            agent {
-                docker {
-                    image 'mcr.microsoft.com/playwright:v1.60.0-jammy'
-                    reuseNode true
-                }
-            }
             steps {
-                echo 'Step 2: Running tests in a Playwright Docker container...'
+                sh 'npx playwright test'
             }
         }
 
         stage('deploy') {
             steps {
-                sh 'npx playwright test'
                 echo 'Mock deployment was successful!'
             }
         }
