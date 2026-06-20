@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'mcr.microsoft.com/playwright:latest'
+            args '--shm-size=2g'
+        }
+    }
 
     options {
         ansiColor('xterm')
