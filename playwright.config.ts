@@ -116,7 +116,7 @@ export default defineConfig({  testDir: './tests',
 
     /* Run your local dev server before starting the tests */
     webServer: startLocalServer ? {
-      command: 'npm run start',
+      command: 'npm run start -- --host 127.0.0.1 --port 8000 --strict-port',
       url: baseURL,
       stdout: 'ignore',
       stderr: 'ignore',
