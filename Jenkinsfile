@@ -1,79 +1,87 @@
 pipeline {
+
     agent any
-    
+
+    environment {
+        CI = 'true'
+        BASE_URL = 'https://valentinos-magic-beans.click/'
+    }
+
     options {
-        ansiColor('xterm')
+        timestamps()
+        disableConcurrentBuilds()
     }
 
     stages {
-        stage('build') {
 
-            echo 'Skipping build stage for demonstration purposes.'
-   /*          agent {
-                docker {
-                    image 'node:22-alpine'
-                    reuseNode true
-                }
-            }
+        stage('Checkout') {
             steps {
-                sh 'npm ci'
-                sh 'npm run build'
-            } */
-        }
-
-        stage('test') {
-            parallel {
-/*                 stage('unit tests') {
-                    agent {
-                        docker {
-                            image 'node:22-alpine'
-                            reuseNode true
-                        }
-                    }
-                    steps {
-                        // Unit tests with Vitest
-                        sh 'npx vitest run --reporter=verbose'
-                    }
-                } */
-                stage('integration tests') {
-                    agent {
-                        docker {
-                            image 'mcr.microsoft.com/playwright:v1.60.0-jammy'
-                            reuseNode true
-                        }
-                    }
-                    steps {
-                        sh 'npx playwright test'
-                    }
-                }
+                checkout scm
             }
         }
 
-        stage('deploy') {
-            agent {
-                docker {
-                    image 'alpine'
-                }
-            }
+        stage('Node Version') {
             steps {
-                // Mock deployment which does nothing
-                echo 'Mock deployment was successful!'
+                bat 'node -v'
+                bat 'npm -v'
             }
         }
 
-        stage('e2e') {
-            agent {
-                docker {
-                    image 'mcr.microsoft.com/playwright:v1.60.0-jammy'
-                    reuseNode true
-                }
-            }
-            environment {
-                E2E_BASE_URL = 'https://api.valentinos-magic-beans.click/'
-            }
+        stage('Install Dependencies') {
             steps {
-                sh 'npx playwright test'
+                bat 'npm ci'
             }
+        }
+
+        stage('Install Playwright Browsers') {
+            steps {
+                bat 'npx playwright install'
+            }
+        }
+
+        stage('Run Auth Setup') {
+            steps {
+                bat 'npx playwright test --project=auth-setup'
+            }
+        }
+
+        stage('Run API Tests') {
+            steps {
+                bat 'npx playwright test --project=api-test'
+            }
+        }
+
+        stage('Run UI Tests') {
+            steps {
+                bat 'npx playwright test --project=chromium'
+            }
+        }
+
+    }
+
+    post {
+
+        always {
+
+            junit allowEmptyResults: true,
+                  testResults: 'reports-e2e/junit.xml'
+
+            archiveArtifacts(
+                artifacts: '''
+                    reports-e2e/**,
+                    playwright-report/**,
+                    test-results/**
+                ''',
+                allowEmptyArchive: true
+            )
+        }
+
+        success {
+            echo 'Playwright tests completed successfully.'
+        }
+
+        failure {
+            echo 'Playwright tests failed.'
         }
     }
 }

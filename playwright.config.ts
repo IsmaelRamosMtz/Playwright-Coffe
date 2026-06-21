@@ -34,7 +34,7 @@ export default defineConfig({  testDir: './tests',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Run tests in headed mode by default. */
-    headless: false,
+     headless: process.env.CI ? true : false,
     
 
     /* Base URL to use in actions like `await page.goto('')`. */
