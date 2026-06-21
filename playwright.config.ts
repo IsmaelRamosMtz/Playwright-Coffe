@@ -11,7 +11,8 @@ dotenvConfig({ path: path.resolve(__dirname, '.env') });
 
   const baseURL = process.env.BASE_URL || 'https://valentinos-magic-beans.click/';
   const slowMo = process.env.SLOW_MO ? Number(process.env.SLOW_MO) : 0
-  const startLocalServer = baseURL === 'https://valentinos-magic-beans.click/'
+  // Start local dev server only when baseURL points to localhost
+  const startLocalServer = baseURL.includes('localhost') || baseURL.includes('127.0.0.1')
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -117,6 +118,8 @@ export default defineConfig({  testDir: './tests',
     webServer: startLocalServer ? {
       command: 'npm run start',
       url: baseURL,
+      // If a server is already running at this URL, reuse it instead of failing
+      reuseExistingServer: true,
       stdout: 'ignore',
       stderr: 'ignore',
     } : undefined,
