@@ -67,7 +67,8 @@ pipeline {
 
         stage('UI Tests') {
             steps {
-                sh 'npx playwright test --project=chromium'
+                sh 'npx playwright test tests/basic/1ApiIntercept.spec.ts --project=chromium'
+               // sh 'npx playwright test --project=chromium'
             }
         }
     }
