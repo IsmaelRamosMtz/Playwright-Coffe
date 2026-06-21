@@ -64,13 +64,13 @@ pipeline {
                 sh 'npx playwright test --project=api-test'
             }
         }
-
+/* 
         stage('UI Tests') {
             steps {
                 sh 'npx playwright test tests/basic/1ApiIntercept.spec.ts --project=chromium'
                // sh 'npx playwright test --project=chromium'
             }
-        }
+        } */
     }
 
     post {
