@@ -1,6 +1,11 @@
 pipeline {
 
-    agent any
+    agent {
+        docker {
+            image 'node:20-bullseye'
+            args '-u root:root'
+        }
+    }
 
     environment {
         CI = 'true'
@@ -20,43 +25,56 @@ pipeline {
             }
         }
 
-        stage('Node Version') {
+        stage('Debug') {
             steps {
-                bat 'node -v'
-                bat 'npm -v'
+                sh 'which node || true'
+                sh 'which npm || true'
+                sh 'which npx || true'
+                sh 'node -v'
+                sh 'npm -v'
+                sh 'npx -v'
+                sh 'echo $PATH'
+            }
+        }
+
+        stage('Verify Environment') {
+            steps {
+                sh 'pwd'
+                sh 'node -v'
+                sh 'npm -v'
+                sh 'npx -v'
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                bat 'npm ci'
+                sh 'npm ci'
             }
         }
 
         stage('Install Playwright Browsers') {
             steps {
-                bat 'npx playwright install'
+                sh 'npx playwright install chromium'
             }
         }
 
-        stage('Run Auth Setup') {
+        stage('Auth Setup') {
             steps {
-                bat 'npx playwright test --project=auth-setup'
+                sh 'npx playwright test --project=auth-setup'
             }
         }
 
-        stage('Run API Tests') {
+        stage('API Tests') {
             steps {
-                bat 'npx playwright test --project=api-test'
+                sh 'npx playwright test --project=api-test'
             }
         }
 
-        stage('Run UI Tests') {
+        stage('UI Tests') {
             steps {
-                bat 'npx playwright test --project=chromium'
+                sh 'npx playwright test --project=chromium'
             }
         }
-
     }
 
     post {
@@ -67,21 +85,9 @@ pipeline {
                   testResults: 'reports-e2e/junit.xml'
 
             archiveArtifacts(
-                artifacts: '''
-                    reports-e2e/**,
-                    playwright-report/**,
-                    test-results/**
-                ''',
+                artifacts: 'reports-e2e/**/*',
                 allowEmptyArchive: true
             )
-        }
-
-        success {
-            echo 'Playwright tests completed successfully.'
-        }
-
-        failure {
-            echo 'Playwright tests failed.'
         }
     }
 }
