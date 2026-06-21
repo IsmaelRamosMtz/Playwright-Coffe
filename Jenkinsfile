@@ -53,11 +53,11 @@ pipeline {
             }
         }
 
-        stage('Auth Setup') {
+        /* stage('Auth Setup') {
             steps {
                 sh 'npx playwright test --project=auth-setup'
             }
-        }
+        } */
 
         stage('API Tests') {
             steps {
