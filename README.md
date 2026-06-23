@@ -432,7 +432,7 @@ pipeline {
 
 ---
 
-## 12. Flujo de autenticación completo
+## 12. Flujo de autenticación completos
 
 ### Paso 1: generar credenciales
 
@@ -517,6 +517,154 @@ Este README ahora incluye:
 - Mantén las variables sensibles fuera del repositorio.
 - Si agregas un nuevo setup, documenta el propósito en este README.
 - Si quieres un nuevo flujo de usuario, crea un nuevo spec en `tests/basic/`.
+
+---
+
+## 16. GitHub Actions — Integración continua (desde lo más básico hasta "verde") 🟢
+
+Esta sección explica cómo añadir GitHub Actions para ejecutar las pruebas de Playwright en CI, desde un workflow mínimo hasta un pipeline completo y listo para pasar en un PR.
+
+### 16.1 Conceptos básicos
+
+- `workflow`: archivo YAML en `.github/workflows/` que contiene jobs y steps.
+- `job`: colección de steps que corren en un mismo runner.
+- `step`: acción individual, p.ej. `actions/checkout` o `run: npm ci`.
+- `runner`: máquina que ejecuta el job (ubuntu-latest, windows-latest, macos-latest).
+- `trigger`: evento que inicia el workflow (`push`, `pull_request`, `workflow_dispatch`).
+
+Para que GitHub Actions detecte un workflow, el archivo DEBE estar en `.github/workflows/`.
+
+### 16.2 Workflow mínimo (ejemplo)
+
+Archivo: `.github/workflows/ci.yml`
+
+```yaml
+name: CI
+
+on:
+    push:
+        branches: [ junior, main ]
+    pull_request:
+    workflow_dispatch:
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+                with:
+                    node-version: 18
+            - run: npm ci
+            - run: npx playwright install --with-deps
+            - run: npx playwright test --project=api-test
+```
+
+Este workflow:
+- se ejecuta en push/PR/dispatch,
+- instala dependencias,
+- instala los browsers necesarios para Playwright,
+- ejecuta solamente el proyecto `api-test`.
+
+### 16.3 Explicación detallada (lo que usamos en este repo)
+
+- `on.pull_request`: hace que el workflow se ejecute cuando se crea/actualiza un PR — revisa la pestaña **Checks** del PR.
+- `actions/checkout@v4`: clona el repo en el runner.
+- `actions/setup-node@v4`: instala Node.js en la versión especificada.
+- `npx playwright install --with-deps`: instala navegadores y dependencias del sistema necesarias en runners Ubuntu.
+- `npx playwright test --project=api-test`: ejecuta solo el proyecto `api-test` (útil para pipelines separados: API vs UI).
+
+> Nota: si un paso como `npm run build` falla con "Missing script: build", añade el script `build` en `package.json` o elimina/ajusta el step. En este repo hemos añadido un `build` mínimo para evitar el fallo.
+
+### 16.4 Playwright en GitHub Actions — mejoras y alternativas
+
+- Usar la imagen oficial de Playwright en contenedor (opcional) para entornos reproducibles:
+
+```yaml
+container:
+    image: mcr.microsoft.com/playwright:v1.54.2-jammy
+    options: --user 1001
+```
+
+- Si usas la imagen, no necesitas `npx playwright install` (los navegadores ya vienen incluidos).
+- En runners Ubuntu, `npx playwright install --with-deps` instala dependencias nativas (recomendado si no se usa container).
+
+### 16.5 Secrets y permisos
+
+- Guarda credenciales sensibles en `Settings -> Secrets and variables -> Actions` (ej. `MAIL_SLURP_API_KEY`).
+- En la sección `Settings -> Actions -> General` revisa `Workflow permissions` y el comportamiento de `Allow GitHub Actions to create and approve pull requests` si aplica.
+- Los PRs desde forks no exponen secrets por seguridad; usa tokens limitados o configura runners privados si necesitas secrets en forks.
+
+### 16.6 Artefactos y reportes
+
+- Para subir reportes HTML/JUnit y poder descargarlos desde la ejecución, usa `actions/upload-artifact@v4`.
+
+Ejemplo de paso para subir reportes:
+
+```yaml
+- uses: actions/upload-artifact@v4
+    if: ${{ always() }}
+    with:
+        name: e2e-report
+        path: reports-e2e/html/
+        if-no-files-found: warn
+```
+
+Y para publicar JUnit (si tu workflow lo necesita) simplemente genera `reports-e2e/junit.xml` desde Playwright (`--reporter=junit`) y archívalo.
+
+### 16.7 Debugging y consejos cuando algo falla
+
+- Revisa la pestaña **Actions** y dentro del run abre el job y busca el step que falló — GitHub muestra la salida completa.
+- Para errores de dependencias nativas en Ubuntu, añade `npx playwright install --with-deps` antes de correr tests.
+- Si un step falla por falta de script (p.ej. `npm run build`), añade el script en `package.json` o modifica el workflow para no llamarlo.
+- Para reproducir localmente el runner puedes usar `act` (https://github.com/nektos/act): instala `act`, luego:
+
+```bash
+act -j test --secret-file .secrets
+```
+
+(`.secrets` es un fichero con tus variables de entorno en formato KEY=VALUE, si el workflow las necesita).
+
+### 16.8 Forzar re-run y pruebas manuales
+
+- En la pestaña **Actions** -> selecciona el run -> botón **Re-run jobs** -> `Re-run all jobs`.
+- Desde un PR: en la lista de checks, haz click en el run fallido y re-run si tienes permisos.
+
+### 16.9 Branch protections y checks requeridos
+
+- Si quieres que el PR no pueda mergearse hasta que las acciones pasen, ve a `Settings -> Branches -> Branch protection rules` y añade:
+    - Require status checks to pass before merging (selecciona el job `CI` o checks específicos).
+    - Require linear history / required reviews según política.
+
+### 16.10 Checklist para dejar todo "en verde" (guía paso a paso)
+
+1. Asegúrate que `.github/workflows/ci.yml` exista en la rama del PR.
+2. Verifica `on: pull_request` presente si quieres que corra en PRs.
+3. Añade `actions/checkout@v4` y `actions/setup-node@v4` con `node-version` apropiado.
+4. Ejecuta `npm ci` (no `npm install`) para entornos CI reproducibles.
+5. Instala navegadores: `npx playwright install --with-deps` o usa la imagen `mcr.microsoft.com/playwright`.
+6. Asegúrate que `package.json` contenga los scripts llamados por el workflow (`build`, `test`, etc.).
+7. Para reducir ruido en PRs grandes, ejecuta solo el proyecto necesario: `npx playwright test --project=api-test`.
+8. Sube artefactos y reportes para investigar fallos más fácilmente.
+9. Re-run si hay fallos transitivos.
+10. Ajusta Branch Protection para exigir checks verdes antes de merge.
+
+### 16.11 Ejemplo real (este repo)
+
+- Archivo usado aquí: [`.github/workflows/ci.yml`](.github/workflows/ci.yml#L1-L200)
+- Ejecuta en `pull_request` y en `push` a `junior`/`main`.
+- Ejecuta por separado:
+    - `test_integration` -> `npx playwright test --project=api-test`
+    - `e2e` -> `npx playwright test --project=api-test` (limitado para evitar correr la suite completa en PRs)
+
+Si quieres que añada jobs separados por cada proyecto (`signup`, `auth-setup`, `api-test`, `chromium`) puedo generarlos y documentar cómo paralelizarlos.
+
+---
+
+Si quieres, puedo ahora:
+- (A) Añadir jobs en el workflow para `signup`, `auth-setup`, `api-test` y `chromium` separados, o
+- (B) Dejar el workflow tal cual y documentar cómo añadir caching y parallelización.
+
 
 ---
 
