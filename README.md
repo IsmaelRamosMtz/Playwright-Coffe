@@ -258,6 +258,259 @@ Se usa para estructurar los tests en pasos claros y legibles.
 
 ---
 
+## 10. Integración continua con Jenkins y Docker 🚀
+
+Aquí explico todo lo que hicimos para que el proyecto corra en CI.
+
+### 10.1 Qué hicimos
+
+1. Creamos un `Dockerfile` basado en `jenkins/jenkins:lts`.
+2. Instalamos Node.js 20 y npm dentro del contenedor.
+3. Configuramos Jenkins para ejecutar `npm ci` y `npx playwright install chromium`.
+4. Añadimos soporte para MailSlurp en CI con la variable `MAIL_SLURP_API_KEY`.
+5. Definimos un pipeline en `Jenkinsfile` que ejecuta:
+   - `Install Dependencies`
+   - `Install Playwright Browsers`
+   - `Auth Setup` (opcional)
+   - `API Tests`
+   - `UI Tests`
+
+### 10.2 Dockerfile final
+
+El `Dockerfile` quedó así:
+
+```Dockerfile
+FROM jenkins/jenkins:lts
+
+USER root
+
+RUN apt-get update && apt-get install -y curl gnupg2 ca-certificates \
+ && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+ && apt-get install -y nodejs \
+ && npm install -g npm@latest \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
+
+USER jenkins
+```
+
+### 10.3 Construir la imagen Docker
+
+```bash
+docker build -t jenkins-node .
+```
+
+### 10.4 Ejecutar Jenkins en Docker
+
+```bash
+docker run -d --name jenkins-node -p 8081:8080 jenkins-node
+```
+
+### 10.5 Configurar Jenkins
+
+- Abre `http://localhost:8081`.
+- Crea un nuevo pipeline.
+- Usa `Pipeline script from SCM`.
+- Configura tu repositorio y branch `junior`.
+- Crea un credential de tipo `Secret text` con id `MAIL_SLURP_API_KEY`.
+
+---
+
+## 11. Jenkinsfile y pipeline
+
+El `Jenkinsfile` define las etapas que corren en CI.
+
+### Contenido clave del `Jenkinsfile`
+
+```groovy
+pipeline {
+
+    agent any
+
+    environment {
+        CI = 'true'
+        BASE_URL = 'https://valentinos-magic-beans.click/'
+        MAIL_SLURP_API_KEY = credentials('MAIL_SLURP_API_KEY')
+    }
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Debug') {
+            steps {
+                sh 'which node || true'
+                sh 'which npm || true'
+                sh 'which npx || true'
+                sh 'node -v'
+                sh 'npm -v'
+                sh 'npx -v'
+                sh 'echo $PATH'
+            }
+        }
+
+        stage('Verify Environment') {
+            steps {
+                sh 'pwd'
+                sh 'node -v'
+                sh 'npm -v'
+                sh 'npx -v'
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                sh 'npm ci'
+            }
+        }
+
+        stage('Install Playwright Browsers') {
+            steps {
+                sh 'npx playwright install chromium'
+            }
+        }
+
+        stage('Sign Up Flow') {
+            steps {
+                sh 'SIGN_UP_FLOW=true npx playwright test --project=signup'
+            }
+        }
+
+        stage('Auth Setup') {
+            steps {
+                sh 'npx playwright test --project=auth-setup'
+            }
+        }
+
+        stage('API Tests') {
+            steps {
+                sh 'npx playwright test --project=api-test'
+            }
+        }
+
+        stage('UI Tests') {
+            steps {
+                sh 'npx playwright test --project=chromium'
+            }
+        }
+    }
+
+    post {
+        always {
+            junit allowEmptyResults: true,
+                  testResults: 'reports-e2e/junit.xml'
+
+            archiveArtifacts(
+                artifacts: 'reports-e2e/**/*',
+                allowEmptyArchive: true
+            )
+        }
+    }
+}
+```
+
+### Qué hace cada etapa
+
+- `Checkout`: trae el código.
+- `Debug`: muestra que Node/npm/npx existen.
+- `Verify Environment`: valida versiones y ruta.
+- `Install Dependencies`: instala paquetes con `npm ci`.
+- `Install Playwright Browsers`: instala Chromium.
+- `Sign Up Flow`: genera `loginData.json`.
+- `Auth Setup`: genera `user-session.json`.
+- `API Tests`: corre tests de API.
+- `UI Tests`: corre tests de UI con sesión restaurada.
+
+---
+
+## 12. Flujo de autenticación completo
+
+### Paso 1: generar credenciales
+
+```bash
+SIGN_UP_FLOW=true npx playwright test --project=signup
+```
+
+Esto genera:
+- `playwright/.auth/loginData.json`
+
+### Paso 2: crear sesión autenticada
+
+```bash
+npx playwright test --project=auth-setup
+```
+
+Esto genera:
+- `playwright/.auth/user-session.json`
+
+### Paso 3: ejecutar pruebas UI autenticadas
+
+```bash
+npx playwright test --project=chromium
+```
+
+---
+
+## 13. Errores comunes y solución
+
+### `Missing apiKey config parameter`
+
+Significa que `MAIL_SLURP_API_KEY` no está definido.
+
+- En local: revisa el archivo `.env`.
+- En Jenkins: revisa el credential `MAIL_SLURP_API_KEY`.
+
+### Si fallan los tests de UI en Jenkins
+
+- Asegúrate de que `npx playwright install chromium` se ejecute.
+- Comprueba versiones de Node y npm.
+- Verifica que `playwright/.auth/user-session.json` exista.
+
+### Si `loginData.json` no existe
+
+Ejecuta primero `Sign Up Flow` con:
+
+```bash
+SIGN_UP_FLOW=true npx playwright test --project=signup
+```
+
+---
+
+## 14. Comando para fijar el branch en un commit
+
+Para dejar `junior` en el commit `507de9d210b539809bfb5bba9c00255f8e8f0b4b` usamos:
+
+```bash
+git reset --hard 507de9d210b539809bfb5bba9c00255f8e8f0b4b
+git push --force-with-lease origin junior
+```
+
+---
+
+## 15. Resumen final
+
+Este README ahora incluye:
+- la estructura original del proyecto
+- cómo funciona cada prueba
+- cómo instalar y configurar Docker/Jenkins
+- el `Dockerfile` que usamos
+- el `Jenkinsfile` completo
+- el flujo `signup` → `auth-setup` → `chromium`
+- soluciones a errores comunes
+- el comando git para fijar el branch en un commit específico
+- agregamos MailSlurp para generar usuarios temporales y verificar emails.
+- guardamos credenciales y sesión para ejecutar pruebas autenticadas.
+- dejamos documentado el proceso paso a paso para poder repetirlo desde cero.
+
 ## 10. Recomendaciones ✅
 
 - Usa Page Objects siempre que añadas nuevos flujos.
