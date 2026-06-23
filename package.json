@@ -9,6 +9,7 @@
     "@types/node": "^25.7.0"
   },
   "scripts": {
-    "test": "playwright test"
+    "test": "playwright test",
+    "build": "echo \"No build step defined for this project\""
   }
 }
