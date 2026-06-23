@@ -432,7 +432,7 @@ pipeline {
 
 ---
 
-## 12. Flujo de autenticación completo
+## 12. Flujo de autenticación completos
 
 ### Paso 1: generar credenciales
 
